@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cybersecurity Threat Assessment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: linear-gradient(to right, #e9f0ff, #f8fbff);
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .assessment-container {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 40px 30px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      font-size: 2.3rem;
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      color: #2c3e50;
+    }
+
+    h4 {
+      margin-top: 30px;
+      font-weight: 500;
+      color: #34495e;
+    }
+
+    .form-check {
+      padding-left: 1.8rem;
+    }
+
+    .btn-primary {
+      font-size: 1.1rem;
+      padding: 10px 24px;
+      margin-top: 30px;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      font-size: 0.9rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/" style="align-items:center ;">CYBERSECURITY SECURITY DASHBOARD</a>
+      <div class="d-flex ms-auto align-items-center text-white">
+        {% if session.user %}
+          <div class="me-3">
+            Welcome, {{ session.user }}!
+          </div>
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container py-5">
+    <div class="assessment-container mx-auto" style="max-width: 750px;">
+      <h1 class="text-center">🛡️ Cybersecurity Threat Assessment Tool</h1>
+
+      {% if error %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  {{ error }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+
+      <!-- Threat Analysis Form -->
+      <form action="/analyze" method="POST">
+
+        <!-- Threat checkboxes -->
+        <h4>Select Threat Types</h4>
+        <div class="row row-cols-1 row-cols-md-2 g-2">
+          {% for threat in threats %}
+          <div class="col">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="threats" value="{{ threat }}" id="threat{{ loop.index }}">
+              <label class="form-check-label" for="threat{{ loop.index }}">{{ threat }}</label>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Risk Level Filter -->
+        <h4>Filter by Risk Level</h4>
+        <select class="form-select" name="risk_level">
+          <option value="">-- All --</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+
+        <!-- Security Domain Filter -->
+        <h4>Filter by Security Domain</h4>
+        <select class="form-select" name="domain">
+          <option value="">-- All --</option>
+          <option value="Network">Network</option>
+          <option value="Application">Application</option>
+          <option value="Operating System">Operating System</option>
+        </select>
+
+        <div class="text-center">
+          <button type="submit" class="btn btn-primary">Analyze</button>
+        </div>
+      </form>
+
+      <!-- File Upload Form (separate form) -->
+      <h4 class="mt-5">Upload CVE File (CSV or JSON)</h4>
+      <form action="/upload" method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+          <input type="file" name="file" class="form-control" required>
+        </div>
+        <div class="text-center">
+          <button type="submit" class="btn btn-outline-primary">Upload and Analyze</button>
+        </div>
+      </form>
+
+    </div>
+
+    <!-- System Info Card -->
+    <div class="card my-5 shadow-sm">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">System Information</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          {% for key, value in system_info.items() %}
+          <div class="col-md-6 mb-2">
+            <strong>{{ key }}:</strong> {{ value }}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <footer>&copy; 2025 Cyber Threat Assessment Tool</footer>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
