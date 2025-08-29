@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import pandas as pd
+from ctad_model.ml_model import predict_threat
 import json
 import os
 import platform
@@ -17,7 +18,8 @@ import datetime
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
+app.secret_key = os.getenv("SECRET_KEY", "fallbackkey")
+
 
 from functools import wraps
 
@@ -106,14 +108,34 @@ def index():
 @login_required
 def dashboard():
     user_email = session.get('user')
-    analysis_history = session.get('upload_history', [])    
+    analysis_history = session.get('upload_history', [])
+
+    # Counters to collect stats from existing dataset
+    threat_counter = Counter()
+    risk_counter = Counter()
+
+    for _, row in df_csv.iterrows():
+        description = row['Description']
+        predicted_threat = predict_threat(description)
+        matched_threats = [predicted_threat]
+        score = THREAT_WEIGHTS.get(predicted_threat, 1)
+        level, _ = get_risk_level(score)
+
+        threat_counter.update(matched_threats)
+        risk_counter[level] += 1
+
+        PRECOMPUTED_DASHBOARD_DATA = {
+        "threat_counts": dict(threat_counter),
+        " risk_counts": dict(risk_counter)
+    }
+
     return render_template(
-       'CTAD_dashboard.html',
+        'dashboard.html',
         user_email=user_email,
         history=analysis_history,
-        risk_counts={},     
-     threat_counts={}  
-)
+        **PRECOMPUTED_DASHBOARD_DATA
+    )
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -124,7 +146,7 @@ def signup():
             auth_client.create_user_with_email_and_password(email, password)
             return redirect(url_for('login'))
         except Exception as e:
-            return render_template('signup.html', error=str(e))
+            return render_template('signup.html', e, error = 'sorry email already exist')
     return render_template('signup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -134,11 +156,11 @@ def login():
         password = request.form['password']
         try:
             user = auth_client.sign_in_with_email_and_password(email, password)
-            session['user'] = user['email']
+            session['user'] = user.get('email', email)
             return redirect(url_for('dashboard'))
         except Exception as e:
-            print("🔥 Firebase login error:", e)
-            return render_template('login.html', error=f"Login failed: {str(e)}")
+            print("Invalid email or password: " , e)
+            return render_template('login.html', error="Invalid email or password ")
     return render_template('login.html')
 
 @app.route('/logout')
@@ -164,7 +186,7 @@ def analyze():
     selected_threats = request.form.getlist('threats')
     if not selected_threats:
         return render_template('index.html', threats=THREAT_WEIGHTS.keys(), system_info=get_system_info(),
-                               error="⚠️ You must select at least one threat type.")
+                            error="⚠️ You must select at least one threat type.")
     risk_level_filter = request.form.get('risk_level')
     domain_filter = request.form.get('domain')
     selected_threats_lower = [t.lower() for t in selected_threats]
@@ -174,7 +196,10 @@ def analyze():
     domain_counter = Counter()
 
     for _, row in df_csv.iterrows():
-        score, matched_threats = score_risk(row['Description'])
+        predicted_threat = predict_threat(row['Description'])
+        matched_threats = [predicted_threat]
+        score = THREAT_WEIGHTS.get(predicted_threat, 1)
+        level, color = get_risk_level(score)
         if not any(mt.lower() in selected_threats_lower for mt in matched_threats):
             continue
         level, color = get_risk_level(score)
@@ -207,9 +232,9 @@ def analyze():
 
     results = sorted(results, key=lambda x: x['score'], reverse=True)[:50]
     return render_template('Results.html', data=results,
-                           risk_counts=dict(risk_counter),
-                           threat_counts=dict(threat_counter),
-                           domain_counts=dict(domain_counter))
+                            risk_counts=dict(risk_counter),
+                            threat_counts=dict(threat_counter),
+                            domain_counts=dict(domain_counter))
 
 def generate_advice(threats):
     advice_map = {
@@ -259,7 +284,10 @@ def upload():
         for _, row in df.iterrows():
             desc = row.get('Description') or row.get('description') or ""
             cve_id = row.get('Name') or row.get('cve') or row.get('id') or "Unknown"
-            score, matched_threats = score_risk(desc)
+            predicted_threat = predict_threat(desc)
+            matched_threats = [predicted_threat]
+            score = THREAT_WEIGHTS.get(predicted_threat, 1)
+            level, color = get_risk_level(score)
             level, color = get_risk_level(score)
             results.append({
                 'id': cve_id,
