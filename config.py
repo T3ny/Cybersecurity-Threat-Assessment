@@ -1,7 +1,7 @@
-import pyrebase
-import firebase_admin
 import os
 from dotenv import load_dotenv
+import pyrebase
+import firebase_admin
 from firebase_admin import credentials, auth
 
 load_dotenv()
@@ -20,6 +20,7 @@ pyrebase_config = {
 
 firebase = pyrebase.initialize_app(pyrebase_config)
 auth_client = firebase.auth()
+
 
 #Admin SDK
 cred = credentials.Certificate("firebase_admin.json")
