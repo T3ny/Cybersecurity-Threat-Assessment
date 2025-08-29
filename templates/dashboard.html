@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Cyber Security Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #004b66;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .dashboard-section {
+            background-color: #035f7c;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        .row > div {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <h2 class="text-center mb-4">Organization Cyber Security Dashboard</h2>
+        <p class="text-center">This dashboard shows ML-based threat classification and risk-level summaries.</p>
+
+        <div class="row">
+            <div class="col-md-6 dashboard-section">
+                <div class="chart-title">Threat Type Breakdown</div>
+                <canvas id="threatBarChart"></canvas>
+            </div>
+            <div class="col-md-6 dashboard-section">
+                <div class="chart-title">Risk Level Breakdown</div>
+                <canvas id="riskPieChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const threatLabels = {{ threat_counts.keys()|list|tojson }};
+        const threatData = {{ threat_counts.values()|list|tojson }};
+
+        new Chart(document.getElementById('threatBarChart'), {
+            type: 'bar',
+            data: {
+                labels: threatLabels,
+                datasets: [{
+                    label: 'Threat Count',
+                    data: threatData,
+                    backgroundColor: 'rgba(255, 159, 64, 0.8)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        const riskLabels = {{ risk_counts.keys()|list|tojson }};
+        const riskData = {{ risk_counts.values()|list|tojson }};
+
+        new Chart(document.getElementById('riskPieChart'), {
+            type: 'pie',
+            data: {
+                labels: riskLabels,
+                datasets: [{
+                    label: 'Risk Levels',
+                    data: riskData,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',    // High
+                        'rgba(255, 206, 86, 0.8)',   // Medium
+                        'rgba(75, 192, 192, 0.8)'    // Low
+                    ]
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+    </script>
+</body>
+</html>
